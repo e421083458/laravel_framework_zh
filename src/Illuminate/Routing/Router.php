@@ -13,8 +13,8 @@ use Illuminate\Container\Container;
 use Illuminate\Support\Traits\Macroable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
-use Illuminate\Contracts\Routing\Registrar as RegistrarContract;
 use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
+use Illuminate\Contracts\Routing\Registrar as RegistrarContract;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -618,6 +618,7 @@ class Router implements RegistrarContract
 
     /**
      * Dispatch the request to the application.
+     * 定位请求到应用中
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
@@ -629,6 +630,8 @@ class Router implements RegistrarContract
         // If no response was returned from the before filter, we will call the proper
         // route instance to get the response. If no route is found a response will
         // still get returned based on why no routes were found for this request.
+        //如果before filter没有返回,我们将调用适当路由得到结果
+        //如果没有route发现,我们的将返回为什么没返回route
         $response = $this->callFilter('before', $request);
 
         if (is_null($response)) {
@@ -657,7 +660,6 @@ class Router implements RegistrarContract
         // route resolver on the request so middlewares assigned to the route will
         // receive access to this route instance for checking of the parameters.
         $route = $this->findRoute($request);
-
         $request->setRouteResolver(function () use ($route) {
             return $route;
         });
@@ -698,7 +700,6 @@ class Router implements RegistrarContract
                                 $this->container->make('middleware.disable') === true;
 
         $middleware = $shouldSkipMiddleware ? [] : $this->gatherRouteMiddlewares($route);
-
         return (new Pipeline($this->container))
                         ->send($request)
                         ->through($middleware)

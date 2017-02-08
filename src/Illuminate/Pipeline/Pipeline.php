@@ -94,10 +94,13 @@ class Pipeline implements PipelineContract
      */
     public function then(Closure $destination)
     {
+        //回调->回调->回调最终还是得到一个回调函数,擦
         $firstSlice = $this->getInitialSlice($destination);
-
         $pipes = array_reverse($this->pipes);
-
+        //设置链式回调函数,细节: 将中间件回调串联起来
+        //默认先按照Middleware顺序调用handle
+        //最后调用$firstSlice匿名函数
+        //启动调用链
         return call_user_func(
             array_reduce($pipes, $this->getSlice(), $firstSlice), $this->passable
         );
@@ -110,16 +113,19 @@ class Pipeline implements PipelineContract
      */
     protected function getSlice()
     {
+        //$stack是上次运算结果,默认为$firstSlice
         return function ($stack, $pipe) {
+            //设置调用链,但不调用
             return function ($passable) use ($stack, $pipe) {
                 // If the pipe is an instance of a Closure, we will just call it directly but
                 // otherwise we'll resolve the pipes out of the container and call it with
                 // the appropriate method and arguments, returning the results back out.
+                // 如果管道是个匿名函数,我们将直接调用它
+                // 否则我们将使用容器解析管道内容,并返回
                 if ($pipe instanceof Closure) {
                     return call_user_func($pipe, $passable, $stack);
                 } else {
                     list($name, $parameters) = $this->parsePipeString($pipe);
-
                     return call_user_func_array([$this->container->make($name), $this->method],
                                                 array_merge([$passable, $stack], $parameters));
                 }
@@ -129,6 +135,7 @@ class Pipeline implements PipelineContract
 
     /**
      * Get the initial slice to begin the stack call.
+     * 获取初始堆栈开始堆栈调用
      *
      * @param  \Closure  $destination
      * @return \Closure
@@ -142,6 +149,7 @@ class Pipeline implements PipelineContract
 
     /**
      * Parse full pipe string to get name and parameters.
+     * 解析pipe字符串得到类名与参数名
      *
      * @param  string $pipe
      * @return array

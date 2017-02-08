@@ -110,12 +110,16 @@ class Kernel implements KernelContract
      */
     protected function sendRequestThroughRouter($request)
     {
+        //绑定一个已经存在的对象到容器中
         $this->app->instance('request', $request);
 
         Facade::clearResolvedInstance('request');
 
         $this->bootstrap();
-
+        //创建管道
+        //设置$request为发送对象
+        //判断是否应该跳过中间件,否设置中间件
+        //跳转到router
         return (new Pipeline($this->app))
                     ->send($request)
                     ->through($this->app->shouldSkipMiddleware() ? [] : $this->middleware)
@@ -232,7 +236,6 @@ class Kernel implements KernelContract
     {
         return function ($request) {
             $this->app->instance('request', $request);
-
             return $this->router->dispatch($request);
         };
     }
